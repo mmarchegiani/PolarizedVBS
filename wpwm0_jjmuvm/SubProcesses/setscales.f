@@ -86,7 +86,7 @@ c         stop 21
 c         rscale = 0
 
 c         invariant mass of final state particles divided by sqrt(2)
-c         m_ww=sqrt(p(3)*p(4) + p(3)*p(5) + p(3)*p(6) + p(4)*p(5) + p(4)*p(6) + p(5)*p(6)) 
+c         m_ww=sqrt(p(5)*p(6) + p(5)*p(7) + p(5)*p(8) + p(6)*p(7) + p(6)*p(8) + p(7)*p(8)) 
           
           rscale=0d0
           do i=5,nexternal-1
