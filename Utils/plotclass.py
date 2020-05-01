@@ -26,11 +26,11 @@ class plot(object):
 		self.part = ""
 		self.title = ""
 		if len(name.split("_")) > 1:
-			self.varname = name.split("_")[0]
-			self.part = name.split("_")[1]
+			self.varname = self.name.split("_")[0]
+			self.part = self.name.split("_")[1]
 			self.title = (self.part + " " + d[self.varname]).capitalize()
 		else:
-			self.varname = name.split("_")[0]
+			self.varname = self.name.split("_")[0]
 			self.title = d[self.varname]
 		self.xlabel = d_label[self.varname]
 		self.ylabel = ""
@@ -60,13 +60,16 @@ class plot(object):
 		if self.type == "hist":
 			plt.figure(figsize=[12, 9])
 			n_list = []
+			bins_list = []
 			if type(self.var[0]) is list:
 				for (i, x) in enumerate(self.var):
 					n, bins, patches = plt.hist(x, bins=self.bin, color=self.color[i], alpha=0.7, label=self.label[i], histtype="stepfilled", ec="black")
 					n_list.append(n)
+					bins_list.append(bins)
 			else:
 				n, bins, patches = plt.hist(self.var, bins=self.bin, color=self.color, alpha=0.7, label=self.label, histtype="stepfilled", ec="black")
 				n_list.append(n)
+				bins_list.append(bins)
 			plt.title(self.title)
 			if self.cut != None:
 				cut_label = d_label[self.varname].split('[')[0].strip()

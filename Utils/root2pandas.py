@@ -36,9 +36,9 @@ print(varset)
 
 modes = ["save", "read"]
 df = None
-df_events = None
 if mode == "save":
 	df = save_tree(filename, varset, part_type, save=True, label=label, path='dataframes/' + label + '/')
+	sys.exit()
 if mode == "read":
 	if label == "wpwm0_jjmuvm":
 		dtype = {'PT_l' : object, 'Eta_l' : object, 'Phi_l' : object, 'PID_l' : object, 'mll' : float, 'PT_miss' : float, 'mww' : float,
@@ -46,11 +46,15 @@ if mode == "read":
 		df = pd.read_csv(filename, dtype=dtype)
 		varset = ['PT_l', 'Eta_l', 'PT_j', 'Eta_j', 'mjj', 'DeltaEta_jj']
 		create_lists(df, varset)
-	if label in ["zz_mumuee", "zz0_mumuee", "zzT_mumuee"]:
+	if label in ["zz_mumuee", "z0z0_mumuee", "zTzT_mumuee", "z0zT_mumuee", "zTz0_mumuee"]:
 		dtype = {'PT_l' : object, 'Eta_l' : object, 'Phi_l' : object, 'PID_l' : object, 'Mothup_l' : object, 'mll' : object, 'm4l' : float,
 				 'PT_j' : object, 'Eta_j' : object, 'Phi_j' : object, 'PID_j' : object, 'mjj' : float, 'DeltaEta_jj' : float,
-				 'PT_z' : object, 'Eta_z' : object, 'Phi_z' : object, 'PID_z' : object, 'fUniqueID_z' : object, 'mz' : object, 'mzz' : float, 'Theta_e' : float, 'Theta_mu' : float}
-		df = pd.read_csv(filename, usecols=['PT_l', 'Eta_l', 'mll', 'm4l', 'PT_j', 'Eta_j', 'mjj', 'DeltaEta_jj', 'PT_z', 'Eta_z', 'mz', 'mzz', 'Theta_e','Theta_mu'], dtype=dtype)
+				 'PT_z' : object, 'Eta_z' : object, 'Phi_z' : object, 'PID_z' : object, 'fUniqueID_z' : object, 'mz' : object, 'mzz' : float,
+				 'Theta_e' : float, 'Theta_mu' : float, 'PT_Ze': float, 'PT_Zmu': float, 'Eta_Ze': float, 'Eta_Zmu': float, 'ScalePDF' : float}
+		df = pd.read_csv(filename, usecols=['PT_l', 'Eta_l', 'mll', 'm4l',
+											'PT_j', 'Eta_j', 'mjj', 'DeltaEta_jj',
+											'PT_z', 'Eta_z', 'mz', 'mzz',
+											'Theta_e', 'Theta_mu', 'PT_Ze', 'PT_Zmu', 'Eta_Ze', 'Eta_Zmu', 'ScalePDF'], dtype=dtype)
 		#df = pd.read_csv(filename, dtype=dtype)
 		varset = ['PT_l', 'Eta_l', 'mll', 'PT_j', 'Eta_j']
 		create_lists(df, varset)
@@ -75,15 +79,7 @@ with open(plot_card, 'r') as file:
 		globals()[varname] = var
 		first = False
 
-if "zz" in label:
-	fileroot = "trees/unweighted_events_zz_mumuee_10k.root"		# HARDCODED
-	print("Opening %s" % fileroot)
-	file = uproot.open(fileroot)
-	tree_delphes = file[b'Delphes;1']
-	df_events = tree_delphes.pandas.df([b'Event.ScalePDF'])
-	print(str(tree_delphes.name) + " contains " + str(len(tree_delphes)) + " entries")
-	file.close()
-	
+if label in ["zz_mumuee", "z0z0_mumuee", "zTzT_mumuee", "z0zT_mumuee", "zTz0_mumuee"]:
 	PT_l = inclusive(df['PT_l'])
 	PT1_l = column_leading(df['PT_l'], 1)
 	Eta_l = inclusive(df['Eta_l'])
@@ -99,6 +95,12 @@ if "zz" in label:
 	df_highmzz = df.query('mzz > 750')
 	cosTheta_e_highmzz = np.cos(df_highmzz['Theta_e'].values).tolist()
 	cosTheta_mu_highmzz = np.cos(df_highmzz['Theta_mu'].values).tolist()
+	PT_Ze = df['PT_Ze'].values.tolist()
+	PT_Zmu = df['PT_Zmu'].values.tolist()
+	Eta_Ze = df['Eta_Ze'].values.tolist()
+	Eta_Zmu = df['Eta_Zmu'].values.tolist()
+	scalepdf = df['ScalePDF'].values.tolist()
+	mzz_sqrt2 = ((df['mzz'].values)/np.sqrt(2)).tolist()
 
 	pt_leptons = plot("pt_leptons", [PT_l, PT1_l], bin_pt_l, ["leptons", "leading"], cut=[pt_l_min, pt1_l_min], color=['blue', 'red'], type='hist', plot_dir=plot_dir)
 	pt_jets = plot("pt_jets", PT_j, bin_pt_j, "jets", cut=pt_j_min, color='blue', type='hist', plot_dir=plot_dir)
@@ -110,20 +112,16 @@ if "zz" in label:
 	diboson = plot("mzz", mzz, bin_mzz, "", cut=m4l_min, color='cyan', type='hist', plot_dir=plot_dir)
 	costheta = plot("costheta", [cosTheta_e, cosTheta_mu], bin_ctheta, ["cos$θ_e$", "cos$θ_{\mu}$"], color=['blue', 'red'], type='hist', plot_dir=plot_dir)
 	costheta_highmzz = plot("costheta", [cosTheta_e_highmzz, cosTheta_mu_highmzz], bin_ctheta, ["cos$θ_e$", "cos$θ_{\mu}$"], color=['blue', 'red'], type='hist', plot_dir=plot_dir, filelabel='highmzz')
+	pt_z = plot("pt_z", [PT_Ze, PT_Zmu], bin_pt_j, ["$Z_e$","$Z_{\mu}$"], color=['blue', 'red'], type='hist', plot_dir=plot_dir)
+	eta_z = plot("eta_z", [Eta_Ze, Eta_Zmu], bin_eta, ["$Z_e$","$Z_{\mu}$"], color=['blue', 'red'], type='hist', plot_dir=plot_dir)
 	m4l_vs_mzz = plot("m4l_vs_mzz", [m4l, mzz], [bin_mzz[0], bin_mzz[-1]], type='scatter', plot_dir=plot_dir)
+	pdfscale_vs_mzz_sqrt2 = plot("pdfscale_vs_mzz_sqrt2", [scalepdf, mzz_sqrt2], [lim_pdf[0], lim_pdf[-1]], type='scatter', plot_dir=plot_dir)
 
-	for graph in [pt_leptons, pt_jets, eta_particles, dilepton, dijet, deltaetajj, fourlepton, diboson, costheta, costheta_highmzz, m4l_vs_mzz]:
+	for graph in [pt_leptons, pt_jets, eta_particles, dilepton, dijet, deltaetajj, fourlepton, diboson, costheta, costheta_highmzz, m4l_vs_mzz, pdfscale_vs_mzz_sqrt2, pt_z, eta_z]:
 		graph.draw()
 		del graph
 
 if "wp" in label:
-	fileroot = "trees/unweighted_events_wpwm0_jjmuvm_5k.root"
-	print("Opening %s" % fileroot)
-	file = uproot.open(fileroot)
-	tree_delphes = file[b'Delphes;1']
-	df_events = tree_delphes.pandas.df([b'Event.ScalePDF'])
-	print(str(tree_delphes.name) + " contains " + str(len(tree_delphes)) + " entries")
-
 	PT_mu = column_leading(df['PT_l'], 1)
 	PT_vm = column_leading(df['PT_l'], 2)
 	Eta_mu = column_leading(df['Eta_l'], 1)

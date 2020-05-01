@@ -44,7 +44,6 @@ def argmaxs(l):			# Function which returns the ranked index list
 		i_max = np.argmax(buffer)
 		arg_list.append(i_max)
 		buffer[i_max] = float('-inf')
-	
 	return arg_list
 
 def metric(mxx, M):
@@ -74,7 +73,6 @@ def build_col(df, varset):   # Leading and sub-leading particles are defined wit
 			i = -1
 			x = []
 		i += 1
-		
 	return list_var
 
 def build_dataframe(df, varset):		# Function which builds the dataframe with the ordered lists
@@ -305,8 +303,6 @@ def zz(df_j, df_l, df_z):
 	df = df_j.copy()
 	df[df_l.columns] = df_l
 	df[df_z.columns] = df_z
-	df['Theta_e'] = [None]*df.shape[0]
-	df['Theta_mu'] = [None]*df.shape[0]
 
 	print("Computing 'Theta_e', 'Theta_mu'")
 	for index, row in df_l.iterrows():
@@ -352,6 +348,10 @@ def zz(df_j, df_l, df_z):
 
 		df['Theta_e'][index] = p_zee.Angle(p_e.Vect())
 		df['Theta_mu'][index] = p_zmumu.Angle(p_mu.Vect())
+		df['PT_Ze'][index] = p_zee.Pt()
+		df['PT_Zmu'][index] = p_zmumu.Pt()
+		df['Eta_Ze'][index] = p_zee.Eta()
+		df['Eta_Zmu'][index] = p_zmumu.Eta()
 
 	return df	
 
@@ -369,8 +369,11 @@ def save_tree(filename, varset, part_type, save=False, label='', path='dataframe
 	#df_part = tree_delphes.pandas.df([b'Particle.PID', b'Particle.PT', b'Particle.E', b'Particle.Eta', b'Particle.Phi', b'Particle.Mass', b'Event.ScalePDF'])
 	#df_part = tree_delphes.pandas.df([b'Particle.PID', b'Particle.PT', b'Particle.E', b'Particle.Eta', b'Particle.Phi', b'Particle.Mass'])
 	df_part = tree_delphes.pandas.df([b'Particle.fUniqueID', b'Particle.PID', b'Particle.M2', b'Particle.PT', b'Particle.E', b'Particle.Eta', b'Particle.Phi', b'Particle.Mass'])
+	df_events = tree_delphes.pandas.df([b'Event.ScalePDF'])
+	df_events.rename(columns={'Event.ScalePDF' : 'ScalePDF'}, inplace=True)
+	df_events.reset_index(drop=True, inplace=True)
 	df_leading = None
-	if label in ["zz_mumuee", "zz0_mumuee", "zzT_mumuee"]:
+	if label in ["zz_mumuee", "z0z0_mumuee", "zTzT_mumuee", "z0zT_mumuee", "zTz0_mumuee"]:
 		if part_type == 'l':
 			df_p = df_particle(df_part, part_type)
 			df_leading = build_dataframe(df_p, varset)
@@ -384,6 +387,12 @@ def save_tree(filename, varset, part_type, save=False, label='', path='dataframe
 			df_leading['mjj'] = [None]*df_leading.shape[0]
 			df_leading['DeltaEta_jj'] = [None]*df_leading.shape[0]
 			df_leading = jj(df_j_leading)
+		if part_type == 'z':
+			varset_z = varset
+			if 'Particle.Mass' not in varset:
+				varset_z = varset + ['Particle.fUniqueID', 'Particle.Mass']
+			df_p = df_particle(df_part, 'z')
+			df_leading = build_dataframe(df_p, varset_z)
 		if part_type == "final":
 			df_j = df_particle(df_part, 'j')
 			df_l = df_particle(df_part, 'l')
@@ -402,7 +411,14 @@ def save_tree(filename, varset, part_type, save=False, label='', path='dataframe
 			df_j_leading['DeltaEta_jj'] = [None]*df_j_leading.shape[0]
 			df_j_leading = jj(df_j_leading)
 			df_z_leading['mzz'] = [None]*df_z_leading.shape[0]
+			df_z_leading['Theta_e'] = [None]*df_z_leading.shape[0]
+			df_z_leading['Theta_mu'] = [None]*df_z_leading.shape[0]
+			df_z_leading['PT_Ze'] = [None]*df_z_leading.shape[0]
+			df_z_leading['PT_Zmu'] = [None]*df_z_leading.shape[0]
+			df_z_leading['Eta_Ze'] = [None]*df_z_leading.shape[0]
+			df_z_leading['Eta_Zmu'] = [None]*df_z_leading.shape[0]
 			df_leading = zz(df_j_leading, df_l_leading, df_z_leading)
+			df_leading['ScalePDF'] = df_events['ScalePDF']
 
 	if label == "wpwm0_jjmuvm":
 		if part_type == "final":
@@ -417,8 +433,9 @@ def save_tree(filename, varset, part_type, save=False, label='', path='dataframe
 			df_l_leading['PT_miss'] = [None]*df_l_leading.shape[0]
 			df_j_leading['vbs_tag'] = [[]]*df_j_leading.shape[0]
 			df_leading = jjmuvm(df_j_leading, df_l_leading)
+			df_leading['ScalePDF'] = df_events['ScalePDF']
 
-	if not label in ["zz_mumuee", "zz0_mumuee", "zzT_mumuee", "wpwm0_jjmuvm"]:
+	if not label in ["zz_mumuee", "z0z0_mumuee", "zTzT_mumuee", "z0zT_mumuee", "zTz0_mumuee", "wpwm0_jjmuvm"]:
 		print("Label name not available.")
 		return
 
