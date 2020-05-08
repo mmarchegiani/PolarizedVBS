@@ -52,13 +52,14 @@ def metric(mxx, M):
 		metric_list.append(-abs(m - M))		# This choice for the metric as negative is such that the Z,W candidates have the highest metric
 	return metric_list
 
-def build_col(df, varset):   # Leading and sub-leading particles are defined with respect to
-	varname = varset[0]      # the first variable of the list (varset[0]) (normally PT)
-	x = []					 # The function generates lists of the type PT=[40.5, 36, 20, 10]
+def build_col(df, varset):   		# Leading and sub-leading particles are defined with respect to
+	varname = varset[0]      		# the first variable of the list (varset[0]) (normally PT)
+	entrystart = df.index[0][0]		# The function generates lists of the type PT=[40.5, 36, 20, 10]
+	x = []
 	list_var = []
 	for (j, var) in enumerate(varset):
 		list_var.append([])
-	length = len(df.loc[0][varname].values)
+	length = len(df.loc[entrystart][varname].values)
 	i = 0
 	for index, row in df.iterrows():
 		x.append(row[varname])
@@ -356,20 +357,24 @@ def zz(df_j, df_l, df_z):
 	return df	
 
 
-def save_tree(filename, varset, part_type, save=False, label='', path='dataframes/'):
+def save_tree(filename, varset, part_type, save=False, label='', path='dataframes/', entrystart=None, entrystop=None):
 	print("Opening %s" % filename)
 	file = uproot.open(filename)
 
-	#events = file[b'Delphes;1/Event']
 	tree = file[b'Delphes;1/Particle']
-	#print(str(events.name) + " contains " + str(len(events)) + " entries")
-	print(str(tree.name) + " contains " + str(len(tree)) + " entries")
+	Nentries = len(tree)
+	print(str(tree.name) + " contains " + str(Nentries) + " entries")
 
 	tree_delphes = file[b'Delphes;1']
-	#df_part = tree_delphes.pandas.df([b'Particle.PID', b'Particle.PT', b'Particle.E', b'Particle.Eta', b'Particle.Phi', b'Particle.Mass', b'Event.ScalePDF'])
-	#df_part = tree_delphes.pandas.df([b'Particle.PID', b'Particle.PT', b'Particle.E', b'Particle.Eta', b'Particle.Phi', b'Particle.Mass'])
-	df_part = tree_delphes.pandas.df([b'Particle.fUniqueID', b'Particle.PID', b'Particle.M2', b'Particle.PT', b'Particle.E', b'Particle.Eta', b'Particle.Phi', b'Particle.Mass'])
-	df_events = tree_delphes.pandas.df([b'Event.ScalePDF'])
+	df_part = pd.DataFrame()
+	df_events = pd.DataFrame()
+	if entrystop != None:
+		df_part = tree_delphes.pandas.df([b'Particle.fUniqueID', b'Particle.PID', b'Particle.M2', b'Particle.PT', b'Particle.E', b'Particle.Eta', b'Particle.Phi', b'Particle.Mass'], entrystart=entrystart, entrystop=entrystop)
+		df_events = tree_delphes.pandas.df([b'Event.ScalePDF'], entrystart=entrystart, entrystop=entrystop)
+	else:
+		df_part = tree_delphes.pandas.df([b'Particle.fUniqueID', b'Particle.PID', b'Particle.M2', b'Particle.PT', b'Particle.E', b'Particle.Eta', b'Particle.Phi', b'Particle.Mass'])
+		df_events = tree_delphes.pandas.df([b'Event.ScalePDF'])
+
 	df_events.rename(columns={'Event.ScalePDF' : 'ScalePDF'}, inplace=True)
 	df_events.reset_index(drop=True, inplace=True)
 	df_leading = None
@@ -441,20 +446,29 @@ def save_tree(filename, varset, part_type, save=False, label='', path='dataframe
 
 	print(df_leading[:10])
 	if save == True:
+		if entrystop != None:
+			path = path + "chunks/"
 		if not os.path.exists(path):
 			os.makedirs(path)
-		out_file = path + 'df_' + part_type + '_' + label + '.csv'
+		out_file = path + 'df_' + part_type + '_' + label + '_' + str(entrystop) + '.csv'
 		print("Saving dataframe into " + out_file)
 		df_leading.to_csv(out_file)
 	return df_leading
 
 # Functions for reading dataframe and cuts selections
 
-def create_lists(df, varset):
-	for index, row in df.iterrows():
-		list_of_lists = []
+def create_lists(df, varset, entrystart=None, entrystop=None):
+	chunk = None
+	if entrystop != None:
+		print("Creating lists for dataframe chunk [%d, %d]" % (entrystart, entrystop))
+		chunk = df.loc[entrystart:entrystop-1]
+	else:
+		print("Creating lists for dataframe")
+		chunk = df.copy()
+	for index, row in chunk.iterrows():
 		for var in varset:
-			df[var][index] = list(map(float, row[var][1:-1].split(',')))
+			chunk[var][index] = list(map(float, row[var][1:-1].split(',')))
+	return chunk
 
 def threshold(column, val, cfr='>', abs=False):
 	length = len(column.values[0])

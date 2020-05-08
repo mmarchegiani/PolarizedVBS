@@ -8,13 +8,14 @@ import sys
 import time
 from lhe import *
 from plotclass import *
+import multiprocessing
 
 print("Starting ", end='')
 print(time.ctime())
 start = time.time()
 argc = len(sys.argv)
-if argc < 5:
-	print("Error: Missing arguments: [filename] [part_type] [label] [mode] [plot_card]")
+if argc < 4:
+	print("Error: Missing arguments: [filename] [label] [plot_card] [Nchunks]")
 	#print("particle types: 'mu', 'l', 'j', 'w', 'final'")
 	print("particle types: 'l', 'j', 'final'")
 	print("particle types: 'final'")
@@ -25,43 +26,46 @@ for arg in sys.argv:
 print("")
 
 filename = sys.argv[1]
-part_type = sys.argv[2]
-label = sys.argv [3]
-mode = sys.argv [4]
-plot_card = sys.argv [5]
-plot_dir = "plots/" + label + "/"
+label = sys.argv [2]
+plot_card = sys.argv [3]
+Nchunks = int(sys.argv [4])
+plot_dir = "plots/" + label + "/multiproc/"
 if not os.path.exists(plot_dir):
 	os.makedirs(plot_dir)
 
-#varset = ['Particle.PT', 'Particle.Eta', 'Particle.Phi', 'Particle.PID', 'Event.ScalePDF']
-varset = ['Particle.PT', 'Particle.Eta', 'Particle.Phi', 'Particle.PID']
-print("varset: ", end='')
-print(varset)
+df = pd.DataFrame()
 
-modes = ["save", "read"]
-df = None
-if mode == "save":
-	df = save_tree(filename, varset, part_type, save=True, label=label, path='dataframes/' + label + '/')
-	sys.exit()
-if mode == "read":
-	if label == "wpwm0_jjmuvm":
-		dtype = {'PT_l' : object, 'Eta_l' : object, 'Phi_l' : object, 'PID_l' : object, 'mll' : float, 'PT_miss' : float, 'mww' : float,
-				 'PT_j' : object, 'Eta_j' : object, 'Phi_j' : object, 'PID_j' : object, 'mjj' : object, 'DeltaEta_jj' : object, 'vbs_tag' : object}
-		df = pd.read_csv(filename, dtype=dtype)
-		varset = ['PT_l', 'Eta_l', 'PT_j', 'Eta_j', 'mjj', 'DeltaEta_jj']
-		create_lists(df, varset)
-	if label in ["zz_mumuee", "z0z0_mumuee", "zTzT_mumuee", "z0zT_mumuee", "zTz0_mumuee"]:
-		dtype = {'PT_l' : object, 'Eta_l' : object, 'Phi_l' : object, 'PID_l' : object, 'Mothup_l' : object, 'mll' : object, 'm4l' : float,
-				 'PT_j' : object, 'Eta_j' : object, 'Phi_j' : object, 'PID_j' : object, 'mjj' : float, 'DeltaEta_jj' : float,
-				 'PT_z' : object, 'Eta_z' : object, 'Phi_z' : object, 'PID_z' : object, 'fUniqueID_z' : object, 'mz' : object, 'mzz' : float,
-				 'Theta_e' : float, 'Theta_mu' : float, 'PT_Ze': float, 'PT_Zmu': float, 'Eta_Ze': float, 'Eta_Zmu': float, 'ScalePDF' : float}
-		df = pd.read_csv(filename, usecols=['PT_l', 'Eta_l', 'mll', 'm4l',
-											'PT_j', 'Eta_j', 'Phi_j', 'mjj', 'DeltaEta_jj',
-											'PT_z', 'Eta_z', 'mz', 'mzz',
-											'Theta_e', 'Theta_mu', 'PT_Ze', 'PT_Zmu', 'Eta_Ze', 'Eta_Zmu', 'ScalePDF'], dtype=dtype)
-		#df = pd.read_csv(filename, dtype=dtype)
-		varset = ['PT_l', 'Eta_l', 'mll', 'PT_j', 'Eta_j', 'Phi_j']
-		create_lists(df, varset)
+if label == "wpwm0_jjmuvm":
+	dtype = {'PT_l' : object, 'Eta_l' : object, 'Phi_l' : object, 'PID_l' : object, 'mll' : float, 'PT_miss' : float, 'mww' : float,
+			 'PT_j' : object, 'Eta_j' : object, 'Phi_j' : object, 'PID_j' : object, 'mjj' : object, 'DeltaEta_jj' : object, 'vbs_tag' : object}
+	df = pd.read_csv(filename, dtype=dtype)
+	varset = ['PT_l', 'Eta_l', 'PT_j', 'Eta_j', 'mjj', 'DeltaEta_jj']
+if label in ["zz_mumuee", "z0z0_mumuee", "zTzT_mumuee", "z0zT_mumuee", "zTz0_mumuee"]:
+	dtype = {'PT_l' : object, 'Eta_l' : object, 'Phi_l' : object, 'PID_l' : object, 'Mothup_l' : object, 'mll' : object, 'm4l' : float,
+			 'PT_j' : object, 'Eta_j' : object, 'Phi_j' : object, 'PID_j' : object, 'mjj' : float, 'DeltaEta_jj' : float,
+			 'PT_z' : object, 'Eta_z' : object, 'Phi_z' : object, 'PID_z' : object, 'fUniqueID_z' : object, 'mz' : object, 'mzz' : float,
+			 'Theta_e' : float, 'Theta_mu' : float, 'PT_Ze': float, 'PT_Zmu': float, 'Eta_Ze': float, 'Eta_Zmu': float, 'ScalePDF' : float}
+	df = pd.read_csv(filename, usecols=['PT_l', 'Eta_l', 'mll', 'm4l',
+										'PT_j', 'Eta_j', 'Phi_j', 'mjj', 'DeltaEta_jj',
+										'PT_z', 'Eta_z', 'mz', 'mzz',
+										'Theta_e', 'Theta_mu', 'PT_Ze', 'PT_Zmu', 'Eta_Ze', 'Eta_Zmu', 'ScalePDF'], dtype=dtype)
+	varset = ['PT_l', 'Eta_l', 'mll', 'PT_j', 'Eta_j', 'Phi_j']
+
+Nentries = df.shape[0]
+
+def df_chunk(entrystart, entrystop):
+	return create_lists(df, varset, entrystart, entrystop)
+
+# Create the lists for each chunk of the dataframe launching a subprocess for each chunk
+delimiters = np.linspace(0, Nentries, Nchunks + 1).astype(int)
+chunks = [(delimiters[i], delimiters[i+1]) for i in range(len(delimiters[:-1]))]
+starttime = time.time()
+pool = multiprocessing.Pool()
+df_list = pool.starmap(df_chunk, chunks)
+pool.close()
+
+# Concat all the dataframe chunks
+df = pd.concat(df_list, ignore_index=True)
 
 # Saving plot_card configuration
 with open(plot_card, 'r') as file:
@@ -172,16 +176,3 @@ print("Finishing ", end='')
 print(time.ctime())
 print("Processed tree in %d s" % (end-start))
 
-"""
-	plt.figure(figsize=[6, 6])
-	plt.scatter((1./np.sqrt(2))*np.array(mww), df_events['Event.ScalePDF'], s=1, color="blue")
-	plt.xlim(0, 1650)
-	plt.ylim(0, 1650)
-	plt.title("Correlation between $M_{WW}/\sqrt{2}$ and ScalePDF")
-	plt.xlabel("$M_{WW}/\sqrt{2}$ [GeV]")
-	plt.ylabel("ScalePDF [GeV]")
-	plt.savefig(plot_dir + "scalepdf.png", format="png")
-	print("Saving " + plot_dir + "scalepdf.png")
-	plt.show()
-	plt.close()
-"""
