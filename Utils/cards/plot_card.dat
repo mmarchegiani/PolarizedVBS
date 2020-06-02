@@ -16,21 +16,23 @@
 #*********************************************************************
 # Tag name for the plots (one word)                                  *
 #*********************************************************************
-  zz_mumuee   = plots_tag ! name of the run 
+  zz_mumuee   = plots_tag ! name of the run	# Note: this line is not used yet by the code
 #*********************************************************************
 # Histograms binning settings (format: min, max, nbins)              *
 #*********************************************************************
- 0, 600, 61   = bin_pt_j   ! pt jet
- 0, 300, 61   = bin_pt_l   ! pt lepton
- 60, 120, 101 = bin_mll    ! dilepton invariant mass
- 0, 1200, 121 = bin_mjj    ! dijet invariant mass
- 0, 1200, 121 = bin_mww    ! WW invariant mass
- 0, 1200, 121 = bin_mzz    ! ZZ invariant mass
- 0, 1200, 121 = bin_pdf    ! pdf scale
- -6, 6, 49    = bin_eta    ! eta
- 0, 10, 41    = bin_deta   ! deltaeta_jj
- -1, 1, 41    = bin_ctheta ! cos(theta)
- 0, 1650      = lim_pdf    ! axlimits of diboson vs pdf scale
+ 0, 600, 61     = bin_pt_j   ! pt jet
+ 0, 300, 61     = bin_pt_l   ! pt lepton
+ 60, 120, 101   = bin_mll    ! dilepton invariant mass
+ 500, 1200, 36  = bin_mjj    ! dijet invariant mass
+ 200, 1200, 101 = bin_mww    ! WW invariant mass
+ 200, 1200, 101 = bin_mzz    ! ZZ invariant mass
+ 200, 1200, 101 = bin_pdf    ! pdf scale
+ -6, 6, 49      = bin_eta    ! eta
+ 0, 10, 41      = bin_deta   ! deltaeta_jj
+ 0, 3.1416, 31  = bin_dphi   ! deltaphi_jj
+ 0, 10, 41      = bin_dr     ! deltar_jj
+ -1, 1, 41      = bin_ctheta ! cos(theta)
+ 0, 1650        = lim_pdf    ! axlimits of diboson vs pdf scale
 #*********************************************************************
 # Cuts visualization                                                 *
 #*********************************************************************

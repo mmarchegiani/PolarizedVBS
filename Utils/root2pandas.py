@@ -6,18 +6,15 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import time
-from lhe import *
-from plotclass import *
+from lib.lhe import *
+from lib.plotclass import *
 
 print("Starting ", end='')
 print(time.ctime())
 start = time.time()
 argc = len(sys.argv)
-if argc < 5:
-	print("Error: Missing arguments: [filename] [part_type] [label] [mode] [plot_card]")
-	#print("particle types: 'mu', 'l', 'j', 'w', 'final'")
-	print("particle types: 'l', 'j', 'final'")
-	print("particle types: 'final'")
+if argc < 4:
+	print("Error: Missing arguments: [filename] [label] [mode] [plot_card]")
 	sys.exit(1)
 
 for arg in sys.argv:
@@ -25,10 +22,9 @@ for arg in sys.argv:
 print("")
 
 filename = sys.argv[1]
-part_type = sys.argv[2]
-label = sys.argv [3]
-mode = sys.argv [4]
-plot_card = sys.argv [5]
+label = sys.argv [2]
+mode = sys.argv [3]
+plot_card = sys.argv [4]
 plot_dir = "plots/" + label + "/"
 if not os.path.exists(plot_dir):
 	os.makedirs(plot_dir)
@@ -41,14 +37,14 @@ print(varset)
 modes = ["save", "read"]
 df = None
 if mode == "save":
-	df = save_tree(filename, varset, part_type, save=True, label=label, path='dataframes/' + label + '/')
+	df = save_tree(filename, varset, save=True, label=label, path='dataframes/' + label + '/')
 	sys.exit()
 if mode == "read":
 	if label == "wpwm0_jjmuvm":
 		dtype = {'PT_l' : object, 'Eta_l' : object, 'Phi_l' : object, 'PID_l' : object, 'mll' : float, 'PT_miss' : float, 'mww' : float,
 				 'PT_j' : object, 'Eta_j' : object, 'Phi_j' : object, 'PID_j' : object, 'mjj' : object, 'DeltaEta_jj' : object, 'vbs_tag' : object}
 		df = pd.read_csv(filename, dtype=dtype)
-		varset = ['PT_l', 'Eta_l', 'PT_j', 'Eta_j', 'mjj', 'DeltaEta_jj']
+		varset = ['PT_l', 'Eta_l', 'PT_j', 'Eta_j', 'mjj', 'DeltaEta_jj', 'DeltaPhi_jj', 'DeltaR_jj']
 		create_lists(df, varset)
 	if label in ["zz_mumuee", "z0z0_mumuee", "zTzT_mumuee", "z0zT_mumuee", "zTz0_mumuee"]:
 		dtype = {'PT_l' : object, 'Eta_l' : object, 'Phi_l' : object, 'PID_l' : object, 'Mothup_l' : object, 'mll' : object, 'm4l' : float,
@@ -91,7 +87,7 @@ if label in ["zz_mumuee", "z0z0_mumuee", "zTzT_mumuee", "z0zT_mumuee", "zTz0_mum
 	Eta_j = inclusive(df['Eta_j'])
 	Phi1_j = column_leading(df['Phi_j'], 1)
 	Phi2_j = column_leading(df['Phi_j'], 2)
-	DeltaPhi_jj = np.abs(Phi1_j - Phi2_j)
+	DeltaPhi_jj = np.minimum(np.abs(Phi1_j - Phi2_j), 2*np.pi - np.abs(Phi1_j - Phi2_j))
 	mll = inclusive(df['mll'])
 	mjj = df['mjj'].values.tolist()
 	DeltaEta_jj = df['DeltaEta_jj']
@@ -117,7 +113,7 @@ if label in ["zz_mumuee", "z0z0_mumuee", "zTzT_mumuee", "z0zT_mumuee", "zTz0_mum
 	pt_leptons = plot("pt_leptons", [PT_l, PT1_l], bin_pt_l, ["leptons", "leading"], cut=[pt_l_min, pt1_l_min], color=['blue', 'red'], type='hist', plot_dir=plot_dir)
 	pt_jets = plot("pt_jets", PT_j, bin_pt_j, "jets", cut=pt_j_min, color='blue', type='hist', plot_dir=plot_dir)
 	eta_particles = plot("eta_particles", [Eta_l, Eta_j], bin_eta, ["leptons", "jets"], cut=[eta_l_max, eta_j_max], color=['yellow', 'green'], type='hist', plot_dir=plot_dir)
-	deltaphijj = plot("deltaphijj", DeltaPhi_jj, np.linspace(0, 2*np.pi, 31), "jets", color='cyan', type='hist', plot_dir=plot_dir, save=True)
+	deltaphijj = plot("deltaphijj", DeltaPhi_jj, bin_dphi, "jets", color='cyan', type='hist', plot_dir=plot_dir, save=True)
 	dilepton = plot("mll", mll, bin_mll, ["", ""], cut=[mmll, mmllmax], color='blue', type='hist', plot_dir=plot_dir)
 	dijet = plot("mjj", mjj, bin_mjj, "jets", cut=mjj_min, color='blue', type='hist', plot_dir=plot_dir)
 	deltaetajj = plot("deltaetajj", DeltaEta_jj, bin_deta, "jets", cut=deta_jj_min, color='yellow', type='hist', plot_dir=plot_dir)
@@ -148,40 +144,38 @@ if "wp" in label:
 	DeltaEta_jj = inclusive(df['DeltaEta_jj'])
 	DeltaEta_jj_vbs = column_leading(df['DeltaEta_jj'], 1)
 	DeltaEta_jj_w = column_leading(df['DeltaEta_jj'], 2)
+	DeltaPhi_jj = inclusive(df['DeltaPhi_jj'])
+	DeltaPhi_jj_vbs = column_leading(df['DeltaPhi_jj'], 1)
+	DeltaPhi_jj_w = column_leading(df['DeltaPhi_jj'], 2)
+	DeltaR_jj = inclusive(df['DeltaR_jj'])
+	DeltaR_jj_vbs = column_leading(df['DeltaR_jj'], 1)
+	DeltaR_jj_w = column_leading(df['DeltaR_jj'], 2)
 	mww = df['mww'].values.tolist()
+	mww_sqrt2 = ((df['mww'].values)/np.sqrt(2)).tolist()
 
 	pt_leptons = plot("pt_leptons", [PT_mu, PT_vm], bin_pt_l, ["muon", "neutrino"], cut=[pt_l_min, pt1_l_min], color=['blue', 'red'], type='hist', plot_dir=plot_dir)
 	pt_jets = plot("pt_jets", PT_j, bin_pt_j, "jets", cut=pt_j_min, color='blue', type='hist', plot_dir=plot_dir)
 	eta_particles = plot("eta_particles", [Eta_mu, Eta_j], bin_eta, ["leptons", "jets"], cut=[eta_l_max, eta_j_max], color=['yellow', 'green'], type='hist', plot_dir=plot_dir)
 	dijet = plot("mjj", mjj, bin_mjj, "jets", cut=mjj_min, color='blue', type='hist', plot_dir=plot_dir)
-	dijet_vbs = plot("mjj", [mjj_vbs, mjj_w], bin_mjj, ["forward jets", "central jets"], cut=mjj_min, color=['blue', 'red'], type='hist', plot_dir=plot_dir, filelabel='vbs')
+	dijet_vbs = plot("mjj", [mjj_vbs, mjj_w], bin_mjj, label=["forward jets", "central jets"], color=['blue', 'red'], type='hist', plot_dir=plot_dir, filelabel='vbs')
 	deltaetajj = plot("deltaetajj", DeltaEta_jj, bin_deta, "jets", cut=deta_jj_min, color='yellow', type='hist', plot_dir=plot_dir)
-	deltaetajj_vbs = plot("deltaetajj", [DeltaEta_jj_vbs, DeltaEta_jj_w], bin_deta, "jets", cut=deta_jj_min, color=['blue', 'red'], type='hist', plot_dir=plot_dir, filelabel='vbs')
+	deltaetajj_vbs = plot("deltaetajj", [DeltaEta_jj_vbs, DeltaEta_jj_w], bin_deta, ["forward jets", "central jets"], color=['blue', 'red'], type='hist', plot_dir=plot_dir, filelabel='vbs')
+	deltaphijj = plot("deltaphijj", DeltaPhi_jj, bin_dphi, "jets", color='cyan', type='hist', plot_dir=plot_dir)
+	deltaphijj_vbs = plot("deltaphijj", [DeltaPhi_jj_vbs, DeltaPhi_jj_w], bin_dphi, ["forward jets", "central jets"], color=['cyan', 'purple'], type='hist', plot_dir=plot_dir, filelabel='vbs')
+	deltarjj = plot("deltarjj", DeltaR_jj, bin_dr, "jets", color='cyan', type='hist', plot_dir=plot_dir)
+	deltarjj_vbs = plot("deltarjj", [DeltaR_jj_vbs, DeltaR_jj_w], bin_dr, ["forward jets", "central jets"], color=['cyan', 'purple'], type='hist', plot_dir=plot_dir, filelabel='vbs')
 	diboson = plot("mww", mww, bin_mww, "", cut=m4l_min, color='cyan', type='hist', plot_dir=plot_dir)
+	pdfscale_vs_mww_sqrt2 = plot("pdfscale_vs_mww_sqrt2", [scalepdf, mww_sqrt2], [lim_pdf[0], lim_pdf[-1]], type='scatter', plot_dir=plot_dir)
 
-	for graph in [pt_leptons, pt_jets, eta_particles, dijet, dijet_vbs, deltaetajj, deltaetajj_vbs, diboson]:
+	for graph in [pt_leptons, pt_jets, eta_particles, dijet, dijet_vbs, deltaetajj, deltaetajj_vbs, deltaphijj, deltaphijj_vbs, deltarjj, deltarjj_vbs, diboson, pdfscale_vs_mww_sqrt2]:
 		graph.draw()
 		del graph
 
-	cov = np.correlate(mww, df_events['Event.ScalePDF'])
-	corrcoeff = cov/(np.array(mww).std()*np.array(df_events['Event.ScalePDF']).std())
+	cov = np.correlate(mww, scalepdf)
+	corrcoeff = cov/(np.array(mww).std()*np.array(scalepdf).std())
 	print("Correlation between Mww and ScalePDF = %f" % corrcoeff)
 
 end = time.time()
 print("Finishing ", end='')
 print(time.ctime())
 print("Processed tree in %d s" % (end-start))
-
-"""
-	plt.figure(figsize=[6, 6])
-	plt.scatter((1./np.sqrt(2))*np.array(mww), df_events['Event.ScalePDF'], s=1, color="blue")
-	plt.xlim(0, 1650)
-	plt.ylim(0, 1650)
-	plt.title("Correlation between $M_{WW}/\sqrt{2}$ and ScalePDF")
-	plt.xlabel("$M_{WW}/\sqrt{2}$ [GeV]")
-	plt.ylabel("ScalePDF [GeV]")
-	plt.savefig(plot_dir + "scalepdf.png", format="png")
-	print("Saving " + plot_dir + "scalepdf.png")
-	plt.show()
-	plt.close()
-"""

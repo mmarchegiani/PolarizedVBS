@@ -5,10 +5,12 @@ import os
 
 d = {"pt" : "$P_{T}$ spectrum", "eta" : "$\eta$ distribution", "mll" : "$M_{ll}$ spectrum", "mjj" : "$M_{jj}$ spectrum", "deltaetajj" : "$\Delta\eta_{jj}$ distribution",
 	 "mww" : "$M_{WW}$ spectrum", "m4l" : "$M_{4l}$ spectrum", "mzz" : "$M_{ZZ}$ spectrum", "pdfscale" : "Renormalization scale spectrum",
-	 "costheta" : "cosθ distribution", "deltaphijj" : "$\Delta\phi_{jj}$ distribution"}
+	 "costheta" : "cosθ distribution", "deltaphijj" : "$\Delta\phi_{jj}$ distribution", "deltaphizz" : "$\Delta\phi_{ZZ}$ distribution",
+	 "deltarjj" : "$\Delta R_{jj}$ distribution"}
 d_label = {"pt" : "$P_{T}$ [GeV]", "eta" : "$\eta$", "mll" : "$M_{ll}$ [GeV]", "mjj" : "$M_{jj}$ [GeV]", "deltaetajj" : "$\Delta\eta_{jj}$",
 		   "mww" : "$M_{WW}$ [GeV]", "m4l" : "$M_{4l}$ [GeV]", "mzz" : "$M_{ZZ}$ [GeV]", "pdfscale" : "$M_{ZZ}/\sqrt{2}$ [GeV]",
-		   "costheta" : "cosθ", "deltaphijj" : "$\Delta\phi_{jj}$"}
+		   "costheta" : "cosθ", "deltaphijj" : "$\Delta\phi_{jj}$", "deltaphizz" : "$\Delta\phi_{ZZ}$",
+		   "deltarjj" : "$\Delta R_{jj}$"}
 
 class plot(object):
   
@@ -35,7 +37,7 @@ class plot(object):
 			self.title = d[self.varname]
 		self.xlabel = d_label[self.varname]
 		self.ylabel = ""
-		if type == "hist":
+		if "hist" in self.type:
 			self.ylabel = "# entries"
 		if type == "scatter" and ("pdfscale_vs_" in self.name):
 			if "wp" in self.plot_dir:
@@ -58,19 +60,28 @@ class plot(object):
 		#print("Deleting " + self.name + " object.")
 
 	def draw(self):
-		if self.type == "hist":
+		print(self.name)
+		print(self.cut)
+		if "hist" in self.type:
+			histtype = "stepfilled"
+			ec = "black"
+			if self.type == "histstep":
+				histtype = "step"
+
 			plt.figure(figsize=[12, 9])
 			n_list = []
 			bins_list = []
 			label_list = []
-			if type(self.var[0]) is list:
+			if type(self.var[0]) in [list, np.ndarray]:
 				for (i, x) in enumerate(self.var):
-					n, bins, patches = plt.hist(x, bins=self.bin, color=self.color[i], alpha=0.7, label=self.label[i], histtype="stepfilled", ec="black")
+					if self.type == "histstep":
+						ec = self.color[i]
+					n, bins, patches = plt.hist(x, bins=self.bin, color=self.color[i], alpha=0.7, label=self.label[i], histtype=histtype, ec=ec)
 					n_list.append(n)
 					bins_list.append([x + 0.5*(bins[1]-bins[0]) for x in bins[:-1]])
 					label_list.append(self.label[i])
 			else:
-				n, bins, patches = plt.hist(self.var, bins=self.bin, color=self.color, alpha=0.7, label=self.label, histtype="stepfilled", ec="black")
+				n, bins, patches = plt.hist(self.var, bins=self.bin, color=self.color, alpha=0.7, label=self.label, histtype=histtype, ec=ec)
 				n_list.append(n)
 				bins_list.append([x + 0.5*(bins[1]-bins[0]) for x in bins[:-1]])
 				label_list.append(self.label)
@@ -97,6 +108,7 @@ class plot(object):
 			plt.ylabel(self.ylabel)
 			plot_file = self.plot_dir + self.name + ".png"
 			if self.filelabel != "":
+				plt.title(self.title + " (" + self.filelabel + ")")
 				plot_file = plot_file.replace(".png", "_" + self.filelabel + ".png")
 			plt.savefig(plot_file, format="png")
 			print("Saving " + plot_file)
@@ -132,6 +144,7 @@ class plot(object):
 				plt.ylabel(self.ylabel)
 				plot_file = self.plot_dir + self.name + ".png"
 				if self.filelabel != "":
+					plt.title(self.title + " (" + self.filelabel + ")")
 					plot_file = plot_file.replace(".png", "_" + self.filelabel + ".png")
 				plt.savefig(plot_file, format="png")
 				print("Saving " + plot_file + ".png")
