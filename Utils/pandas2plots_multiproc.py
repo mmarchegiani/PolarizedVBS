@@ -48,7 +48,7 @@ df = pd.DataFrame()
 df_list = []
 varset = None
 
-if label == "wpwm0_jjmuvm":
+if label in ["wpwm0_jjmuvm", "wp0wm_muvmjj"]:
 	dtype = {'PT_l' : object, 'Eta_l' : object, 'Phi_l' : object, 'PID_l' : object, 'mll' : float, 'PT_miss' : float, 'mww' : float,
 			 'PT_j' : object, 'Eta_j' : object, 'Phi_j' : object, 'PID_j' : object, 'mjj' : object, 'DeltaEta_jj' : object, 'vbs_tag' : object}
 	df = pd.read_csv(filename, dtype=dtype)
